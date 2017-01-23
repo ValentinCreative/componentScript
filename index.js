@@ -5,14 +5,23 @@ import chalk from 'chalk'
 import changeCase from 'change-case'
 import handlebars from 'handlebars'
 
+const templatesPath = `${__dirname}/templates`
+const jsPath        = `${__dirname}/js`
+
+const tab        = '\u0020\u0020\u0020\u0020'
+const backTab1   = '\n' + tab
+const backTab2   = backTab1 + tab
+const backTab3   = backTab2 + tab
+
 class CreateComponent {
 
     constructor() {
         this.component = {}
         this.type      = {
+            name     : 'component',
             prefix   : '',
-            folder   : '',
-            template : '',
+            folder   : 'components',
+            template : `${templatesPath}/component`,
         }
         this.questions = [
             {
@@ -44,9 +53,9 @@ class CreateComponent {
             const name = changeCase.pascalCase(result.name)
 
             this.setComponent(name)
-
             if (this.component.type == 'styleguide') {
                 this.setOriginal(name)
+                this.importSgComponent(name)
             } else {
                 this.createComponent()
             }
@@ -55,29 +64,17 @@ class CreateComponent {
 
     setType(type) {
         switch (type) {
-          case 1:
-            this.type.name     = 'component'
-            this.type.folder   = 'components'
-            this.type.prefix   = ''
-            this.type.template = `${__dirname}/templates/component`
-            break
           case 2:
             this.type.name     = 'styleguide'
             this.type.folder   = 'styleguide'
             this.type.prefix   = 'SgComponent'
-            this.type.template = `${__dirname}/templates/sg-component`
+            this.type.template = `${templatesPath}/sg-component`
             break
           case 3:
             this.type.name     = 'ui'
             this.type.folder   = 'Ui'
             this.type.prefix   = 'Ui'
-            this.type.template = `${__dirname}/templates/component`
-            break
-          default:
-            this.type.name     = 'component'
-            this.type.folder   = 'components'
-            this.type.prefix   = ''
-            this.type.template = `${__dirname}/templates/component`
+            this.type.template = `${templatesPath}/component`
             break
         }
     }
@@ -88,7 +85,7 @@ class CreateComponent {
                 pascalCase : this.type.prefix + name,
                 paramCase  : changeCase.paramCase(this.type.prefix + name),
             },
-            path  : `${__dirname}/${this.type.folder}/${this.type.prefix}${name}/`,
+            path  : `${jsPath}/${this.type.folder}/${this.type.prefix}${name}/`,
             files : [],
             type  : this.type.name,
         }
@@ -103,7 +100,7 @@ class CreateComponent {
             originalFolder = 'Ui'
         }
 
-        const relativePath = path.relative(`${__dirname}/${this.type.folder}/${this.type.prefix}${name}/`, `${__dirname}/${originalFolder}/${name}/`)
+        const relativePath = path.relative(`${jsPath}/${this.type.folder}/${this.type.prefix}${name}/`, `${jsPath}/${originalFolder}/${name}/`)
 
         this.component = {
             ...this.component,
@@ -113,7 +110,7 @@ class CreateComponent {
                     pascalCase : name,
                     paramCase  : changeCase.paramCase(name),
                 },
-                path     : `${__dirname}/${originalFolder}/${name}/`,
+                path     : `${jsPath}/${originalFolder}/${name}/`,
                 relative : relativePath,
                 files    : [],
             },
@@ -187,14 +184,54 @@ class CreateComponent {
                 this.error(error)
 
                 const source       = data.toString()
-                const template     = handlebars.compile(source);
+                const template     = handlebars.compile(source)
                 const outputString = template({
                     component : this.component
-                });
+                })
                 fs.writeFile(file, outputString, error => {
                     this.error(error)
                 })
             })
+        })
+    }
+
+    importSgComponent(name) {
+        const sgComponentsVue = `${jsPath}/styleguide/SgUiComponents/SgUiComponents.vue`
+
+        const relativePath = path.relative(
+            `${jsPath}/styleguide/SgUiComponents/`,
+            `${jsPath}/${this.type.folder}/${this.type.prefix}${name}/${this.type.prefix}${name}/`
+            )
+
+        const paramCase  = this.component.original.name.paramCase
+        const pascalCase = this.component.original.name.pascalCase
+
+        const find = {
+            menu      : '<!-- SG-COMPONENT : menu -->',
+            display   : '<!-- SG-COMPONENT : display -->',
+            import    : '// SG-COMPONENT : import',
+            component : '// SG-COMPONENT : component',
+        }
+
+        const newString = {
+            menu      : `<ui-components-menu-item name="${paramCase}" title="${pascalCase}" />`,
+            display   : `<component-${paramCase} v-if="activeComponent === '${paramCase}'" />`,
+            import    : `import Component${pascalCase} from '${relativePath}'`,
+            component : `Component${pascalCase},`,
+        }
+
+        fs.readFile(sgComponentsVue, (error, data) => {
+            this.error(error)
+
+            const source = data.toString()
+
+            const outputString = source
+                .replace(find.menu, newString.menu + backTab3 + find.menu)
+                .replace(find.display, newString.display + backTab2 + find.display)
+                .replace(find.import, newString.import + backTab1 + find.import)
+                .replace(find.component, newString.component + backTab3 + find.component)
+
+            this.editFile(sgComponentsVue, outputString)
         })
     }
 
@@ -204,6 +241,10 @@ class CreateComponent {
 
     success(message) {
         console.log(chalk.green(message))
+    }
+
+    editFile(file, newString) {
+        fs.writeFile(file, newString, error => this.error(error))
     }
 
 }

@@ -1,6 +1,5 @@
 .DS_Store
 node_modules/
-dist/
 devtools_extensions/
 npm-debug.log
 *.esproj*
@@ -10,6 +9,7 @@ npm-debug.log
 .project
 *.sublime*
 nbproject
-styleguide
-components
-Ui
+js/*
+!js/styleguide/
+js/styleguide/*
+!js/styleguide/SgUiComponents
