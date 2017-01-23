@@ -1,5 +1,5 @@
 <template>
-    <div class="{{component.name.camelCase}}">
+    <div class="{{component.name.pascalCase}}">
 
     </div>
 </template>

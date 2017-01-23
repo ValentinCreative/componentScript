@@ -25,10 +25,10 @@ class CreateComponent {
             },
             {
                 name        : 'name',
-                description : 'Your component name (CamelCase)',
+                description : 'Your component name (PascalCase)',
                 type        : 'string',
-                pattern     : /[A-Z]([A-Z0-9]*[a-z][a-z0-9]*[A-Z]|[a-z0-9]*[A-Z][A-Z0-9]*[a-z])[A-Za-z0-9]*/,
-                message     : 'Must be CamelCase',
+                pattern     : /([A-Z0-9]*[a-z][a-z0-9]*[A-Z]|[a-z0-9]*[A-Z][A-Z0-9]*[a-z])[A-Za-z0-9]*/,
+                message     : 'Must be PascalCase',
                 required    : true,
             },
         ]
@@ -41,10 +41,12 @@ class CreateComponent {
             this.error(error)
             this.setType(result.type)
 
-            this.setComponent(result.name)
+            const name = changeCase.pascalCase(result.name)
+
+            this.setComponent(name)
 
             if (this.component.type == 'styleguide') {
-                this.setOriginal(result.name)
+                this.setOriginal(name)
             } else {
                 this.createComponent()
             }
@@ -83,8 +85,8 @@ class CreateComponent {
     setComponent(name) {
         this.component = {
             name : {
-                camelCase : this.type.prefix + name,
-                paramCase : changeCase.paramCase(this.type.prefix + name),
+                pascalCase : this.type.prefix + name,
+                paramCase  : changeCase.paramCase(this.type.prefix + name),
             },
             path  : `${__dirname}/${this.type.folder}/${this.type.prefix}${name}/`,
             files : [],
@@ -108,8 +110,8 @@ class CreateComponent {
             original : {
                 needImport,
                 name : {
-                    camelCase : name,
-                    paramCase : changeCase.paramCase(name),
+                    pascalCase : name,
+                    paramCase  : changeCase.paramCase(name),
                 },
                 path     : `${__dirname}/${originalFolder}/${name}/`,
                 relative : relativePath,
@@ -152,11 +154,11 @@ class CreateComponent {
                     const ext          = path.extname(file)
                     const templateName = path.basename(file, ext)
                     const oldFile      = this.component.path + file
-                    const newFile      = this.component.path + this.component.name.camelCase + ext
+                    const newFile      = this.component.path + this.component.name.pascalCase + ext
 
                     fs.rename(oldFile, newFile, error => {
                         this.error(error)
-                        this.success(`Created file : ${this.component.name.camelCase + ext}`)
+                        this.success(`Created file : ${this.component.name.pascalCase + ext}`)
 
                         this.component.files.push(newFile)
                         if (index == files.length - 1) {

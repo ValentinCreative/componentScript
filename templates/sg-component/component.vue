@@ -1,5 +1,5 @@
 <template>
-    <sg-component title="{{component.original.name.camelCase}}" class="{{component.name.camelCase}}">
+    <sg-component title="{{component.original.name.pascalCase}}" class="{{component.name.pascalCase}}">
 
         <ui-code title="Documentation"
                  lang="css"
@@ -28,7 +28,7 @@
 <script>
     import SgComponent from '../SgComponent/SgComponent'
     {{#if component.original.needImport}}
-    import {{component.original.name.camelCase}} from '{{component.original.relative}}'
+    import {{component.original.name.pascalCase}} from '{{component.original.relative}}'
     {{/if}}
 
     export default {
@@ -36,7 +36,7 @@
         components : {
             SgComponent,
             {{#if component.original.needImport}}
-            {{component.original.name.camelCase}},
+            {{component.original.name.pascalCase}},
             {{/if}}
         },
     }
